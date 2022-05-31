@@ -1,0 +1,164 @@
+{% load static %}
+{% include "menu.html" %}
+
+<main class="me-3" style="width: 95%;float: right;">
+    <div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 mb-3 border-bottom">
+        <h1 class="h4">Produtos</h1>
+        <button class="btn btn-sm btn-primary mb-1" id="cadastrarProduto" type="button" data-bs-toggle="offcanvas" data-bs-target="#offcanvasRight" aria-controls="offcanvasRight">Novo Produto</button>
+
+    </div>
+    <table class="table table-bordered">
+        <thead>
+            <tr>
+                <th scope="col">#</th>
+                <th scope="col">Descrição</th>
+                <th scope="col">Fabricante</th>
+                <th scope="col">Preço Venda</th>
+                <th scope="col">Qtd</th>
+                <th scope="col">Especificação</th>
+            </tr>
+        </thead>
+        <tbody id="lista-produtos"></tbody>
+    </table>
+    <div class="offcanvas offcanvas-end" tabindex="-1" id="offcanvasRight" aria-labelledby="offcanvasRightLabel">
+        <div class="offcanvas-header border-bottom pb-1">
+          <h5 class="offcanvas-title" id="titleProdutos">Cadastrar Produto</h5>
+          <button type="button" class="btn-close" id="btnCloseProdutos" data-bs-dismiss="offcanvas" aria-label="Close" onclick="zerarForm()"></button>
+        </div>
+        <div class="offcanvas-body">
+            <div class="mb-3">
+                <label class="form-label">Descrição</label>
+                <input type="text" class="form-control" id="descricao" required>
+            </div>
+            <div class="mb-3">
+                <label class="form-label">Fabricante</label>
+                <input type="text" class="form-control" id="fabricante">
+            </div>
+            <div class="mb-3">
+                <label class="form-label">Especificações</label>
+                <textarea class="form-control" id="especificacao" rows="3"></textarea>
+            </div>
+            <div class="row">
+                <div class="col">
+                    <label class="form-label">Preço Venda</label>
+                    <input type="doble" class="form-control" id="preco" required>
+                </div>
+                <div class="col">
+                    <label class="form-label">Quantidade</label>
+                    <input type="int" class="form-control" id="qtd" required>
+                    <input type="hidden" class="form-control" id="id">
+                </div>
+            </div>
+            <div class="row mt-2 float-end">
+                <button class="btn btn-sm w-auto btn-secondary" onclick="zerarForm()" data-bs-dismiss="offcanvas" aria-label="Close" >Cancelar</button>
+                <button class="btn btn-sm w-auto btn-danger mx-2" onclick="excluirProduto()">Excluir</button>
+                <button class="btn btn-sm w-auto btn-primary me-2" onclick="salvarProduto()">Salvar</button>
+            </div>
+        </div>
+    </div>
+</main>
+<script>
+
+    $(document).ready(function() {
+        listarProdutos()
+    });
+    
+    function zerarForm(){
+        document.querySelectorAll('input').forEach(input => input.value = '')
+        document.querySelector('#titleProdutos').innerHTML = 'Cadastrar Produto'
+    }
+
+    async function salvarProduto(){
+        dados = {
+            'id' : document.querySelector('#id').value,
+            'descricao' : document.querySelector('#descricao').value,
+            'fabricante' : document.querySelector('#fabricante').value,
+            'especificacao' : document.querySelector('#especificacao').value,
+            'preco' : document.querySelector('#preco').value,
+            'qtd' : document.querySelector('#qtd').value,
+        }
+
+        for(required of document.querySelectorAll('[required]')){
+            required.classList.toggle('is-invalid', required.value == '')
+        }
+        
+        if(!document.querySelector('.is-invalid')){
+            let response = await fetch('salvarProduto', { 
+                method: 'POST',
+                body: JSON.stringify({'dados': dados}),
+                headers: {
+                    'Accept': 'application/json',
+                    'X-Requested-With': 'XMLHttpRequest',
+                    'X-CSRFToken': getCookie('csrftoken'),
+                }
+            })
+            let retorno = await response.json()
+            if(response.status === 200){
+                alert('Produto incluido com sucesso!')
+                setTimeout(() => {
+                    document.querySelector('#btnCloseProdutos').click()
+                }, 100)
+                listarProdutos()
+            } else {
+                alert('Erro ao salvar produto: ' + retorno.error)
+            }
+        }
+    }
+
+    async function listarProdutos(){
+        let response = await fetch('listarProdutos')
+        let json = await response.json()
+        document.querySelector('#lista-produtos').innerHTML = ''
+        for(produto of json.produtos){
+            $('#lista-produtos').append('<tr onclick="listarProduto('+ produto.id +')">' +
+                '<td>' + produto.id + '</td>' +
+                '<td>' + produto.nome + '</td>' +
+                '<td>' + produto.fabricante + '</td>' +
+                '<td> R$ ' + produto.precoVenda + '</td>' +
+                '<td>' + produto.quantidade + '</td>' +
+                '<td>' + produto.especificacao + '</td>' +
+                '</tr>')
+        }
+    }
+
+    async function listarProduto(id){
+        let response = await fetch('listarProduto/' + id)
+        let json = await response.json()
+        $('#cadastrarProduto').click()
+        document.querySelector('#titleProdutos').innerHTML = 'Editar Produto'
+        for(produto of json.produto){
+            document.querySelector('#id').value = produto.id
+            document.querySelector('#descricao').value = produto.nome
+            document.querySelector('#fabricante').value = produto.fabricante
+            document.querySelector('#especificacao').value = produto.especificacao
+            document.querySelector('#preco').value = produto.precoVenda
+            document.querySelector('#qtd').value = produto.quantidade
+        }
+    }
+
+    async function excluirProduto(){
+        id = document.querySelector('#id').value
+        let response = await fetch('excluirProduto/' + id, 
+            { method: 'DELETE',
+            headers: { 
+                'Accept': 'application/json',
+                'X-Requested-With': 'XMLHttpRequest',
+                'X-CSRFToken': getCookie('csrftoken'),
+            } 
+            }
+        )
+        let json = await response.json()
+        if(response.status == 200){
+            alert('Produto removido com sucesso!')
+            setTimeout(() => {
+                document.querySelector('#btnCloseProdutos').click()
+            }, 100)
+            listarProdutos()
+        } else if(response.status == 401) {
+            alert('Impossível remover esse produto, pois ele está vinculado a um serviço!') 
+        } else {
+            alert('Erro ao remover produto!') 
+        }
+    }
+
+</script>

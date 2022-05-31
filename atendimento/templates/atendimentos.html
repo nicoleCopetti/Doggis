@@ -1,0 +1,199 @@
+{% load static %}
+{% include "menu.html" %}
+
+<main class="me-3" style="width: 95%;float: right;">
+    <div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 mb-3 border-bottom">
+        <h1 class="h4">Atendimentos</h1>
+    </div>
+    <button type="button" class="btn btn-primary d-none" data-bs-toggle="modal" data-bs-target="#modalAtendimento" id="btnModalAtendimento"></button>
+    <div class="modal fade" id="modalAtendimento" aria-hidden="true" aria-labelledby="modalAtendimentoLabel" tabindex="-1">
+        <div class="modal-dialog modal-lg modal-dialog-centered">
+            <div class="modal-content">
+                <div class="modal-header py-2">
+                    <h5 class="modal-title" id="titleModalAtendimento">Cadastrar Atendimento</h5>
+                    <button type="button" class="btn-close" id="close-modalAtendimento" data-bs-dismiss="modal" aria-label="Close" onclick="zerarForm()"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="row mb-2">
+                        <div class="col">
+                            <label class="form-label mb-0">Serviço</label>
+                            <select class="form-select" id="servico">
+                                {%for servico in servicos %}
+                                    <option value="{{servico.id}}">{{servico.descricao}}</option>
+                                {%endfor%}
+                            </select>
+                        </div>
+                        <div class="col">
+                            <label class="form-label mb-0">Pet</label>
+                            <select class="form-select" id="pet" onclick="listarProfissional(this)">
+                                {%for pet in pets %}
+                                    <option value="{{pet.id}}">{{pet.nome}}</option>
+                                {%endfor%}
+                            </select>
+                        </div>
+                    </div>
+                    <div class="mb-2">
+                        <label class="form-label mb-0">Profissional</label>
+                        <select class="form-select" id="profissional"></select>
+                    </div>
+                    <div class="row mb-2">
+                        <div class="col">
+                            <label class="form-label mb-0">Data/hora atendimento</label>
+                            <input type="datetime-local" class="form-control" id="data-hora" required>
+                            <input type="hidden" class="form-control" id="id-atendimento">
+                        </div>
+                        <div class="col">
+                            <label class="form-label mb-0">Status</label>
+                            <select class="form-select" id="status">
+                                <option value="1">Aguardando Atendimento</option>
+                                <option value="2">Cancelado</option>
+                                <option value="3">Concluído</option>
+                            </select>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer py-2">
+                    <button class="btn btn-sm btn-secondary" onclick="zerarForm()" data-bs-dismiss="modal" aria-label="Close">Cancelar</button>
+                    <button class="btn btn-sm btn-primary" onclick="salvarAtendimento()">Salvar</button>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div>
+        <div id='calendar'></div>
+    </div>
+</main>    
+<script src="https://cdn.jsdelivr.net/npm/feather-icons@4.28.0/dist/feather.min.js"></script>
+<script>
+    
+    $(document).ready(function() {
+        listarProfissional(document.querySelector('#pet'))
+    });
+
+    function zerarForm(){
+        document.querySelectorAll('input').forEach(input => input.value = '')
+        document.querySelector('#titleModalAtendimento').innerHTML = 'Cadastrar Atendimento'
+    }
+
+    document.addEventListener('DOMContentLoaded', function() {
+        var calendarEl = document.getElementById('calendar');
+        obj = async () => {
+            const result = await listarAtendimentos()
+            return result
+        }
+        
+        var calendar = new FullCalendar.Calendar(calendarEl, {
+            editable: true,
+            timeZone: 'UTC',
+            initialView: 'dayGridMonth',
+            views: {
+                listDay: { buttonText: 'Dia' },
+                listWeek: { buttonText: 'Semana' },
+                dayGridMonth: { buttonText: 'Mensal' },
+
+            },
+            headerToolbar: {
+                left: 'prev,next today',
+                center: 'title',
+                right: 'Novo dayGridMonth,listDay,listWeek'
+            },
+            customButtons: {
+                Novo: {
+                    text: 'Novo',
+                    click: function() {
+                        $("#btnModalAtendimento").click();
+                    }
+                },
+            },
+            locale: 'pt-br',
+            height: 700,
+            events: obj,
+            eventDidMount: function(info) {
+                var tooltip = new Tooltip(info.el, {
+                    title: info.event.extendedProps.description,
+                    placement: 'top',
+                    trigger: 'hover',
+                    container: 'body'
+                });
+            }, 
+            eventClick: function(info) {
+                var eventObj = info.event;
+                listarAtendimento(eventObj.id)
+            },
+        });
+        calendar.render();
+    });
+
+    async function listarAtendimento(id){
+        let response = await fetch('listarAtendimento/' + id)
+        let json = await response.json()
+        $("#btnModalAtendimento").click()
+        document.querySelector('#titleModalAtendimento').innerHTML = 'Editar Atendimento'
+        for(atendimento of json.atendimento){
+            document.querySelector('#id-atendimento').value = atendimento.id
+            document.querySelector('#servico').value = atendimento.servico_id
+            document.querySelector('#pet').value = atendimento.pet_id
+            document.querySelector('#status').value = atendimento.status
+            document.querySelector('#data-hora').value = atendimento.dataAtendimento
+            document.querySelector('#profissional').value = atendimento.profissional_id
+        }
+        listarProfissional(document.querySelector('#pet'))           
+    }
+
+    async function salvarAtendimento(){
+        dados = {
+            'id' : document.querySelector('#id-atendimento').value,
+            'servico' : document.querySelector('#servico').value,
+            'pet' : document.querySelector('#pet').value,  
+            'profissional' : document.querySelector('#profissional').value,  
+            'status' : document.querySelector('#status').value,
+            'dataAtendimento' : document.querySelector('#data-hora').value,
+        }
+
+        for(required of document.querySelector('#modalAtendimento').querySelectorAll('[required]')){
+            required.classList.toggle('is-invalid', required.value == '')
+        }
+        
+        if(!document.querySelector('#modalAtendimento').querySelector('.is-invalid')){
+            let response = await fetch('salvarAtendimento', { 
+                method: 'POST',
+                body: JSON.stringify({'dados': dados}),
+                headers: {
+                    'Accept': 'application/json',
+                    'X-Requested-With': 'XMLHttpRequest',
+                    'X-CSRFToken': getCookie('csrftoken'),
+                }
+            })
+            let retorno = await response.json()
+            if(response.status === 200){
+                alert('Atendimento incluido com sucesso!')
+                setTimeout(() => {
+                    document.querySelector('#close-modalAtendimento').click()
+                    window.location.reload();
+                }, 100)
+            } else if(response.status == 401) {
+                document.querySelector('#data-hora').value = ''
+                alert('Não foi possível agendar o atendimento, pois o profissional selecionado não está disponível na data e hora informados!') 
+            } else {
+                alert('Erro ao salvar produto: ' + retorno.error)
+            }
+        }
+    }
+
+    async function listarAtendimentos(){
+        let response = await fetch('listarAtendimentos')
+        let json = await response.json()
+        var obj = [];
+        for(atendimento of json.atendimentos){
+            obj.push({
+                title : atendimento.pet__nome + ' - ' +atendimento.servico__descricao,
+                cliente : atendimento.cliente__nome,
+                servico : atendimento.servico__descricao,
+                start : atendimento.dataAtendimento,
+                id : atendimento.id,
+                description : atendimento.cliente__nome,
+            })
+        }
+        return obj;
+    }
+</script>

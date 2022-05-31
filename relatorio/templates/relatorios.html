@@ -1,0 +1,213 @@
+{% load static %}
+{% include "menu.html" %}
+
+<main class="me-3" style="width: 95%;float: right;">
+    <div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 mb-3 border-bottom">
+        <h1 class="h4">Relatórios</h1>
+    </div>
+    <ul class="nav nav-tabs" id="myTab" role="tablist">
+        <li class="nav-item" role="presentation">
+            <button class="nav-link active" id="servico-profissional" data-bs-toggle="tab"
+                data-bs-target="#servico-profissional-pane" type="button" role="tab"
+                aria-controls="servico-profissional-pane" aria-selected="true">Serviços por Profissional</button>
+        </li>
+        <li class="nav-item" role="presentation">
+            <button class="nav-link" id="servico-cliente" data-bs-toggle="tab" data-bs-target="#servico-cliente-pane"
+                type="button" role="tab" aria-controls="servico-cliente-pane" aria-selected="false">Serviços por
+                Cliente</button>
+        </li>
+        <li class="nav-item" role="presentation">
+            <button class="nav-link" id="avalicao-profissional" data-bs-toggle="tab"
+                data-bs-target="#avalicao-profissional-pane" type="button" role="tab"
+                aria-controls="avalicao-profissional-pane" aria-selected="false">Avaliação por Profissional</button>
+        </li>
+    </ul>
+    <div class="tab-content" id="myTabContent">
+        <div class="tab-pane fade show active" id="servico-profissional-pane" role="tabpanel"
+            aria-labelledby="servico-profissional" tabindex="0">
+            <div class="row mx-0 border p-3">
+                <div class="col">
+                    <label class="form-label mb-0">Profissional</label>
+                    <select class="form-select" id="profissional-servico">
+                        {%for atendente in atendentes %}
+                            <option value="{{atendente.user_id}}">{{atendente.nome}}</option>
+                        {%endfor%}
+                        {%for veterinario in veterinarios %}
+                            <option value="{{veterinario.user_id}}">{{veterinario.nome}}</option>
+                        {%endfor%}
+                    </select>
+                </div>
+                <div class="col">
+                    <label class="form-label mb-0">Período</label>
+                    <input type="month" class="form-control" id="periodo-profissional">
+                </div>
+                <div class="col mt-auto">
+                    <button type="submit" class="btn btn-primary" onclick="relServicoProfissional()">Buscar</button>
+                </div>
+                <div class="row mx-0">
+                    <table class="table border mt-4 table-striped">
+                        <thead>
+                            <tr>
+                                <th>Data</th>
+                                <th>Serviço</th>
+                                <th>Status</th>
+                                <th>Cliente</th>
+                                <th>Pet</th>
+                                <th>Tipo Pet</th>
+                            </tr>
+                        </thead>
+                        <tbody id="lista-servico-pro"></tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+        <div class="tab-pane fade" id="servico-cliente-pane" role="tabpanel" aria-labelledby="servico-cliente"
+            tabindex="0">
+            <div class="row mx-0 border p-3">
+                <div class="col">
+                    <label class="form-label mb-0">Cliente</label>
+                    <select class="form-select" id="cliente-servico">
+                        {%for cliente in clientes %}
+                            <option value="{{cliente.user_id}}">{{cliente.nome}}</option>
+                        {%endfor%}
+                    </select>
+                </div>
+                <div class="col">
+                    <label class="form-label mb-0">Período</label>
+                    <input type="month" class="form-control" id="periodo-cliente">
+                </div>
+                <div class="col mt-auto">
+                    <button type="submit" class="btn btn-primary" onclick="relServicoCliente()">Buscar</button>
+                </div>
+                <div class="row mx-0">
+                    <table class="table border mt-4 table-striped">
+                        <thead>
+                            <tr>
+                                <th>Data</th>
+                                <th>Serviço</th>
+                                <th>Profissional</th>
+                                <th>Pataz</th>
+                            </tr>
+                        </thead>
+                        <tbody id="lista-servico-cli"></tbody>
+                        <tfoot>
+                            <td colspan="3">Total:</td>
+                            <td id="total-pataz"></td>
+                        </tfoot>
+                    </table>
+                </div>
+            </div>
+        </div>
+        <div class="tab-pane fade" id="avalicao-profissional-pane" role="tabpanel"
+            aria-labelledby="avalicao-profissional" tabindex="0">
+            <div class="row mx-0 border p-3">
+                <div class="col">
+                    <label class="form-label mb-0">Profissional</label>
+                    <select class="form-select" id="profissional-avaliacao">
+                        {%for atendente in atendentes %}
+                            <option value="{{atendente.user_id}}">{{atendente.nome}}</option>
+                        {%endfor%}
+                        {%for veterinario in veterinarios %}
+                            <option value="{{veterinario.user_id}}">{{veterinario.nome}}</option>
+                        {%endfor%}
+                    </select>
+                </div>
+                <div class="col">
+                    <label class="form-label mb-0">Período</label>
+                    <input type="month" class="form-control" id="periodo-avaliacao">
+                </div>
+                <div class="col mt-auto">
+                    <button type="submit" class="btn btn-primary" onclick="relAvaliacaoProfissional()">Buscar</button>
+                </div>
+                <div class="row mx-0">
+                    <table class="table border mt-4 table-striped">
+                        <thead>
+                            <tr>
+                                <th>Data</th>
+                                <th>Serviço</th>
+                                <th>Status</th>
+                                <th>Cliente</th>
+                                <th>Pet</th>
+                                <th>Nota</th>
+                            </tr>
+                        </thead>
+                        <tbody id="lista-avaliacoes"></tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</main>
+<script>
+        function relAvaliacaoProfissional() {
+            alert('Nenhuma informação encontrada!')
+        }
+
+        function verificarPeriodo(mes, ano){
+            mes_atual = new Date().getMonth()
+            ano_atual = new Date().getFullYear()
+
+            periodo_atual = parseInt(mes_atual) + parseInt(ano_atual) + 1
+            periodo_desejado = parseInt(mes) + parseInt(ano)
+            if(periodo_desejado > periodo_atual){
+                alert('Selecione um periodo igual ou menor que o atual!')
+                document.querySelector('#periodo-profissional').value = ''
+                document.querySelector('#periodo-cliente').value = ''
+                return false
+            }
+
+            return true
+        }
+
+        async function relServicoCliente(){
+            cliente = document.querySelector('#cliente-servico').value
+            periodo = document.querySelector('#periodo-cliente').value
+            mes = periodo.split('-')[1]
+            ano = periodo.split('-')[0]
+            if(verificarPeriodo(mes, ano)){
+                let response = await fetch('relServicoCliente/' + cliente + '/' + ano + '/' + mes)
+                let json = await response.json()
+
+                document.querySelector('#lista-servico-cli').innerHTML = ''
+                document.querySelector('#total-pataz').innerHTML = ''
+                for(item of json.itens){
+                    $('#lista-servico-cli').append('<tr><td>' +  (new Date(item.dataAtendimento)).toLocaleString('pt-br')+ '</td>' +
+                        '<td>' + item.servico_id__descricao + '</td>' +
+                        '<td>' + item.cliente__nome + '</td>' +
+                        '<td>' + ((item.servico_id__pataz__qtdPontos == null) ? 0 : item.servico_id__pataz__qtdPontos ) + '</td></tr>'
+                    )
+                }  
+                document.querySelector('#total-pataz').innerHTML = json.total.servico_id__pataz__qtdPontos__sum
+            }
+        }
+
+
+    async function relServicoProfissional(){
+        profissional = document.querySelector('#profissional-servico').value
+        periodo = document.querySelector('#periodo-profissional').value
+        mes = periodo.split('-')[1]
+        ano = periodo.split('-')[0]
+        if(verificarPeriodo(mes, ano)){
+            let response = await fetch('relServicoProfissional/' + profissional + '/' + ano + '/' + mes)
+            let json = await response.json()
+            document.querySelector('#lista-servico-pro').innerHTML = ''
+            for(item of json.itens){
+                if (parseInt(item.status) == 1){
+                    status = 'Aguardando Atendimento'                    
+                } else if(parseInt(item.status) == 1){
+                    status = 'Cancelado'                   
+                } else {
+                    status = 'Concluído'
+                }
+
+                $('#lista-servico-pro').append('<tr><td>' +  (new Date(item.dataAtendimento)).toLocaleString('pt-br')+ '</td>' +
+                    '<td>' + item.servico_id__descricao + '</td>' +
+                    '<td>' + status + '</td>' +
+                    '<td>' + item.cliente__nome + '</td>' +
+                    '<td>' + item.pet_id__nome + '</td>' +
+                    '<td>' + item.pet_id__tipo + '</td></tr>'
+                )
+            } 
+        }     
+    }
+</script>
